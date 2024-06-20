@@ -4,30 +4,13 @@ pipeline {
     environment {
         DOCKER_CREDENTIALS_ID = 'DockerID'
         DOCKER_IMAGE = 'myrmayur/react-app'
-        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig'
-    }
-
-    tools {
-        
-        nodejs 'NodeJs' // Ensure this matches the NodeJS installation name in Jenkins
+        GIT_REPO = 'https://github.com/myrmayur/simple-reactjs-app.git'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/myrmayur/simple-reactjs-app.git'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh 'npm run build'
+                git branch: 'master', url: env.GIT_REPO
             }
         }
 
@@ -37,17 +20,6 @@ pipeline {
                     docker.withRegistry('', DOCKER_CREDENTIALS_ID) {
                         def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
                         app.push('latest')
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                        sh 'kubectl apply -f k8-deployment.yaml'
-                        sh 'kubectl apply -f k8-service.yaml'
                     }
                 }
             }
