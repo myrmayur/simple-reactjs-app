@@ -1,6 +1,6 @@
 pipeline{
 
-	agent {label 'Built-In Node'}
+	agent   
 
 	environment {
 		DOCKERHUB_CREDENTIALS=credentials('DockerID')
@@ -11,7 +11,7 @@ pipeline{
 	    stage('gitclone') {
 
 			steps {
-				git 'https://github.com/myrmayur/simple-reactjs-app.git'
+				git clone 'https://github.com/myrmayur/simple-reactjs-app.git'
 			}
 		}
 
