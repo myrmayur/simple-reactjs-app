@@ -9,7 +9,7 @@ pipeline {
 
     tools {
         
-        nodejs 'NodeJS' // Ensure this matches the NodeJS installation name in Jenkins
+        nodejs 'NodeJs' // Ensure this matches the NodeJS installation name in Jenkins
     }
 
     stages {
