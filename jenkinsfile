@@ -1,46 +1,45 @@
-pipeline{
+pipeline {
+    agent any
 
-	agent   
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('DockerID')
+        IMAGE_NAME = 'myrmayur/nodeapp_test'
+        TAG = 'latest'
+    }
 
-	environment {
-		DOCKERHUB_CREDENTIALS=credentials('DockerID')
-	}
+    stages {
+        stage('Git Clone') {
+            steps {
+                git 'https://github.com/myrmayur/simple-reactjs-app.git'
+            }
+        }
 
-	stages {
-	    
-	    stage('gitclone') {
+        stage('Build') {
+            steps {
+                sh 'docker build -t ${IMAGE_NAME}:${TAG} .'
+            }
+        }
 
-			steps {
-				git clone 'https://github.com/myrmayur/simple-reactjs-app.git'
-			}
-		}
+        stage('Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DockerID', usernameVariable: 'DOCKERHUB_CREDENTIALS_USR', passwordVariable: 'DOCKERHUB_CREDENTIALS_PSW')]) {
+                    sh '''
+                        echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    '''
+                }
+            }
+        }
 
-		stage('Build') {
+        stage('Push') {
+            steps {
+                sh 'docker push ${IMAGE_NAME}:${TAG}'
+            }
+        }
+    }
 
-			steps {
-				sh 'docker build -t myrmayur/nodeapp_test:latest .'
-			}
-		}
-
-		stage('Login') {
-
-			steps {
-				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-			}
-		}
-
-		stage('Push') {
-
-			steps {
-				sh 'docker push myrmayur/nodeapp_test:latest'
-			}
-		}
-	}
-
-	post {
-		always {
-			sh 'docker logout'
-		}
-	}
-
+    post {
+        always {
+            sh 'docker logout'
+        }
+    }
 }
