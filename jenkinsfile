@@ -1,57 +1,47 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:stable'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     environment {
-        GITHUB_CREDENTIALS_ID = 'github'         // ID of the GitHub credentials
-        DOCKERHUB_CREDENTIALS_ID = 'DockerID'   // ID of the Docker Hub credentials
-        DOCKERHUB_REPO = 'myrmayur/app' // Your Docker Hub repository
+        DOCKER_HUB_CREDENTIALS = 'DockerID' // Use the ID of Docker Hub credentials added in Jenkins
+        IMAGE_NAME = 'myrmayur/app'
+        TAG = "${env.BUILD_ID}"
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git credentialsId: "${env.GITHUB_CREDENTIALS_ID}", url: 'https://github.com/myrmayur/simple-reactjs-app.git', branch: 'master'
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
                 script {
-                    // Building the Docker image
-                    dockerImage = docker.build("${env.DOCKERHUB_REPO}:${env.BUILD_ID}")
+                    docker.build(imageNameWithTag())
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Test') {
+            steps {
+                script{
+                    npm install -g create-react-app
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${env.DOCKERHUB_CREDENTIALS_ID}") {
-                        dockerImage.push("${env.BUILD_ID}")
-                        dockerImage.push("latest")
+                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_HUB_CREDENTIALS) {
+                        docker.image(imageNameWithTag()).push()
                     }
                 }
-            }
-        }
-
-        stage('Clean Up') {
-            steps {
-                // Cleaning up local Docker images to save space
-                sh "docker rmi ${env.DOCKERHUB_REPO}:${env.BUILD_ID}"
-                sh "docker rmi ${env.DOCKERHUB_REPO}:latest"
             }
         }
     }
 
     post {
-        always {
-            // Cleaning the workspace after the build
-            cleanWs()
+        success {
+            echo 'Successfully built and pushed Docker image'
         }
     }
+}
+
+def imageNameWithTag() {
+    return "${IMAGE_NAME}:${TAG}"
 }
