@@ -1,26 +1,12 @@
-# Use the official Node.js image as the base image
-FROM node:14
+FROM node:latest
 
-# Set the working directory inside the container
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code to the working directory
 COPY . .
 
-# Build the React app
-RUN npm run build
-
-# Install a simple HTTP server to serve the static files
-RUN npm install -g serve
-
-# Expose the port the app runs on
-EXPOSE 5000
-
-# Command to run the app
-CMD ["serve", "-s", "build", "-l", "5000"]
+EXPOSE 3000
+CMD [ "node", "index.js" ]

@@ -1,47 +1,46 @@
-pipeline {
-    agent any
+pipeline{
 
-    environment {
-        DOCKER_HUB_CREDENTIALS = 'DockerID' // Use the ID of Docker Hub credentials added in Jenkins
-        IMAGE_NAME = 'myrmayur/app'
-        TAG = "${env.BUILD_ID}"
-    }
+	agent {label 'linux'}
 
-    stages {
-        stage('Build') {
-            steps {
-                script {
-                    docker.build(imageNameWithTag())
-                }
-            }
-        }
+	environment {
+		DOCKERHUB_CREDENTIALS=credentials('DockerID')
+	}
 
-        stage('Test') {
-            steps {
-                script{
-                    npm install -g create-react-app
-                }
-            }
-        }
+	stages {
+	    
+	    stage('gitclone') {
 
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_HUB_CREDENTIALS) {
-                        docker.image(imageNameWithTag()).push()
-                    }
-                }
-            }
-        }
-    }
+			steps {
+				git 'https://github.com/myrmayur/simple-reactjs-app.git'
+			}
+		}
 
-    post {
-        success {
-            echo 'Successfully built and pushed Docker image'
-        }
-    }
-}
+		stage('Build') {
 
-def imageNameWithTag() {
-    return "${IMAGE_NAME}:${TAG}"
+			steps {
+				sh 'docker build -t myrmayur/nodeapp_test:latest .'
+			}
+		}
+
+		stage('Login') {
+
+			steps {
+				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+			}
+		}
+
+		stage('Push') {
+
+			steps {
+				sh 'docker push myrmayur/nodeapp_test:latest'
+			}
+		}
+	}
+
+	post {
+		always {
+			sh 'docker logout'
+		}
+	}
+
 }
